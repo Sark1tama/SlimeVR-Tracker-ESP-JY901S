@@ -90,8 +90,8 @@ void setup()
     // Glow diode while loading
     pinMode(LOADING_LED, OUTPUT);
     pinMode(CALIBRATING_LED, OUTPUT);
-    digitalWrite(CALIBRATING_LED, HIGH);
-    digitalWrite(LOADING_LED, LOW);
+    digitalWrite(CALIBRATING_LED, LOW);
+    digitalWrite(LOADING_LED, HIGH);
     
     Serial.begin(serialBaudRate);
     setUpSerialCommands();
@@ -162,7 +162,7 @@ void setup()
 
     setUpWiFi();
     otaSetup(otaPassword);
-    digitalWrite(LOADING_LED, HIGH);
+    digitalWrite(LOADING_LED, LOW);
 }
 
 // AHRS loop

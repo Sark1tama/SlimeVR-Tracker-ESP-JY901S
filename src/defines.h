@@ -116,9 +116,9 @@
   #define PIN_BATTERY_LEVEL 36
 #endif
 
-#define LOADING_LED LED_BUILTIN
-#define CALIBRATING_LED LED_BUILTIN
-#define STATUS_LED LED_BUILTIN
+#define LOADING_LED 32
+#define CALIBRATING_LED 33
+#define STATUS_LED 25
 
 #if defined(BATTERY_SHIELD_130K) && BATTERY_SHIELD_130K == true
   // Wemos D1 Mini has an internal Voltage Divider with R1=220K and R2=100K > this means, 3.3V analogRead input voltage results in 1023.0
