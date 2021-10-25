@@ -21,22 +21,9 @@
     THE SOFTWARE.
 */
 // List of constants used in other places
-#define IMU_MPU9250 1
-#define IMU_MPU6500 2
-#define IMU_BNO080 3
-#define IMU_BNO085 4
-#define IMU_BNO086 4
-#define IMU_BNO055 5
-#define IMU_MPU6050 6
 #define IMU_JY901 7
 
-#define BOARD_SLIMEVR 1
-#define BOARD_SLIMEVR_DEV 2
-#define BOARD_NODEMCU 3
 #define BOARD_CUSTOM 4
-#define BOARD_WROOM32 5
-#define BOARD_WEMOSD1MINI 6
-#define BOARD_TTGO_TBASE 7
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 2

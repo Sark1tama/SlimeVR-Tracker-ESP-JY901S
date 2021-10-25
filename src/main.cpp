@@ -33,27 +33,10 @@
 #include "serialcommands.h"
 #include "ledstatus.h"
 
-#if IMU == IMU_BNO080 || IMU == IMU_BNO085
-    BNO080Sensor sensor{};
-    #if defined(PIN_IMU_INT_2)
-        #define HAS_SECOND_IMU true
-        BNO080Sensor sensor2{};
-    #endif
-#elif IMU == IMU_BNO055
-    BNO055Sensor sensor{};
-#elif IMU == IMU_MPU9250
-    MPU9250Sensor sensor{};
-#elif IMU == IMU_MPU6500 || IMU == IMU_MPU6050
-    MPU6050Sensor sensor{};
-    #define HAS_SECOND_IMU true
-    MPU6050Sensor sensor2{};
-#elif IMU == IMU_JY901
-    JY901Sensor sensor{};
-    #define HAS_SECOND_IMU true
-    JY901Sensor sensor2{};
-#else
-    #error Unsupported IMU
-#endif
+JY901Sensor sensor{};
+#define HAS_SECOND_IMU true
+JY901Sensor sensor2{};
+
 #ifndef HAS_SECOND_IMU
     EmptySensor sensor2{};
 #endif
@@ -90,15 +73,11 @@ void setup()
     // Glow diode while loading
     pinMode(LOADING_LED, OUTPUT);
     pinMode(CALIBRATING_LED, OUTPUT);
-    digitalWrite(CALIBRATING_LED, HIGH);
-    digitalWrite(LOADING_LED, LOW);
+    digitalWrite(CALIBRATING_LED, LOW);
+    digitalWrite(LOADING_LED, HIGH);
     
     Serial.begin(serialBaudRate);
     setUpSerialCommands();
-#if IMU == IMU_MPU6500 || IMU == IMU_MPU6050 || IMU == IMU_MPU9250
-    I2CSCAN::clearBus(PIN_IMU_SDA, PIN_IMU_SCL); // Make sure the bus isn't suck when reseting ESP without powering it down
-    // Do it only for MPU, cause reaction of BNO to this is not investigated yet
-#endif
     // join I2C bus
     Wire.begin(PIN_IMU_SDA, PIN_IMU_SCL);
 #ifdef ESP8266
@@ -112,46 +91,19 @@ void setup()
     // Wait for IMU to boot
     delay(500);
     
-    // Currently only second BNO08X is supported
-#if IMU == IMU_BNO080 || IMU == IMU_BNO085
-    #ifdef HAS_SECOND_IMU
-        uint8_t first = I2CSCAN::pickDevice(0x4A, 0x4B, true);
-        uint8_t second = I2CSCAN::pickDevice(0x4B, 0x4A, false);
-        if(first != second) {
-            sensor.setupBNO080(0, first, PIN_IMU_INT);
-            sensor2.setupBNO080(1, second, PIN_IMU_INT_2);
-            secondImuActive = true;
-        } else {
-            sensor.setupBNO080(0, first, PIN_IMU_INT);
-        }
-    #else
-    sensor.setupBNO080(0, I2CSCAN::pickDevice(0x4A, 0x4B, true), PIN_IMU_INT);
-    #endif
-#endif
-#if IMU == IMU_JY901
-    #ifdef HAS_SECOND_IMU
-        uint8_t first = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true);
-        uint8_t second = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, false);
-        if(first != second) {
-            sensor.setupJY901(0, first);
-            sensor2.setupJY901(1, second);
-            secondImuActive = true;
-        } else {
-            sensor.setupJY901(0, first);
-        }
-    #else
-    sensor.setupJY901(0, I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true));
-    #endif
-#endif
-#if IMU == IMU_MPU6050 || IMU == IMU_MPU6500
-    #ifdef HAS_SECOND_IMU
-        uint8_t first = I2CSCAN::pickDevice(0x68, 0x69, true);
-        uint8_t second = I2CSCAN::pickDevice(0x69, 0x68, false);
-        if(first != second) {
-            sensor2.setSecond();
-            secondImuActive = true;
-        }
-    #endif
+
+#ifdef HAS_SECOND_IMU
+    uint8_t first = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true);
+    uint8_t second = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, false);
+    if(first != second) {
+        sensor.setupJY901(0, first);
+        sensor2.setupJY901(1, second);
+        secondImuActive = true;
+    } else {
+        sensor.setupJY901(0, first);
+    }
+#else
+sensor.setupJY901(0, I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true));
 #endif
 
     sensor.motionSetup();
@@ -162,7 +114,7 @@ void setup()
 
     setUpWiFi();
     otaSetup(otaPassword);
-    digitalWrite(LOADING_LED, HIGH);
+    digitalWrite(LOADING_LED, LOW);
 }
 
 // AHRS loop
@@ -183,28 +135,22 @@ void loop()
 #ifndef UPDATE_IMU_UNCONNECTED
         if(isConnected()) {
 #endif
-#if IMU == IMU_JY901
-    IMU_start_ms_1=millis();
-    if((IMU_start_ms_1-IMU_last_ms_1)>IMU1_SAMPLE_RATE)
+IMU_start_ms_1=millis();
+if((IMU_start_ms_1-IMU_last_ms_1)>IMU1_SAMPLE_RATE)
+{
+    sensor.motionLoop();
+    IMU_last_ms_1=millis();
+}
+#if HAS_SECOND_IMU
+    if(secondImuActive)
+    IMU_start_ms_2=millis();
+    if((IMU_start_ms_2-IMU_last_ms_2)>IMU2_SAMPLE_RATE)
     {
         sensor.motionLoop();
-        IMU_last_ms_1=millis();
+        IMU_last_ms_2=millis();
     }
-    #if HAS_SECOND_IMU
-        if(secondImuActive)
-        IMU_start_ms_2=millis();
-        if((IMU_start_ms_2-IMU_last_ms_2)>IMU2_SAMPLE_RATE)
-        {
-            sensor.motionLoop();
-            IMU_last_ms_2=millis();
-        }
-    #endif
-#else
-    sensor.motionLoop();
-    #ifdef HAS_SECOND_IMU
-        sensor2.motionLoop();
-    #endif
 #endif
+
 #ifndef UPDATE_IMU_UNCONNECTED
         }
 #endif
