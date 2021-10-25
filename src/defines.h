@@ -24,10 +24,10 @@
 #include "debug.h"
 
 // Set parameters of IMU and board used
-#define IMU IMU_BNO085
-#define BOARD BOARD_SLIMEVR
-#define IMU_ROTATION -PI / 2.0
-#define SECOND_IMU_ROTATION PI / 2.0
+#define IMU IMU_JY901
+#define BOARD BOARD_CUSTOM
+#define IMU_ROTATION PI
+#define SECOND_IMU_ROTATION -PI / 2.0
 #define BATTERY_SHIELD_130K false
 
 #if IMU == IMU_BNO085
@@ -71,6 +71,14 @@
   #define IMU_HAS_MAG false
   #define I2C_SPEED 100000 // If you want to use dual MPU6050's, change I2C_SPEED to 400000
   #define IMU_MPU6050_RUNTIME_CALIBRATION // Comment to revert to startup/traditional-calibration
+#elif IMU == IMU_JY901
+  #define IMU_NAME "JY901"
+  #define IMU_HAS_ACCELL true
+  #define IMU_HAS_GYRO true
+  #define IMU_HAS_MAG true
+  #define I2C_SPEED 400000 
+  #define IMU1_SAMPLE_RATE 10
+  #define IMU2_SAMPLE_RATE 10
 #else
     #error Select IMU in defines.h
 #endif
@@ -94,6 +102,11 @@
   #define PIN_IMU_INT_2 13
   #define PIN_BATTERY_LEVEL A0
 #elif BOARD == BOARD_CUSTOM
+  #define PIN_IMU_SDA 21
+  #define PIN_IMU_SCL 22
+  #define PIN_BATTERY_LEVEL 34
+  #define JY_ADDR_1 0x50
+  #define JY_ADDR_2 0x51
   // Define pins by the examples above
 #elif BOARD == BOARD_WROOM32
   #define PIN_IMU_SDA 21
@@ -113,5 +126,5 @@
   #define batteryADCMultiplier 1.0 / 1023.0 * 4.5
 #else
   // SlimeVR Board can handle max 5V > so analogRead of 5.0V input will result in 1023.0
-  #define batteryADCMultiplier 1.0 / 1023.0 * 5.0
+  #define batteryADCMultiplier 3.3 / 4095.0 * 2.2
 #endif

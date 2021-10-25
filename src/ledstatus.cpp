@@ -50,11 +50,11 @@ unsigned long statusPrintInterval = 0;
 unsigned long lastUpdate = millis();
 
 void ledOn() {
-    digitalWrite(STATUS_LED, LOW);
+    digitalWrite(STATUS_LED, HIGH);
 }
 
 void ledOff() {
-    digitalWrite(STATUS_LED, HIGH);
+    digitalWrite(STATUS_LED, LOW);
 }
 
 void setLedStatus(uint32_t status) {

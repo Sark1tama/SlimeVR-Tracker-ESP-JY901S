@@ -27,6 +27,7 @@
 #include <BNO080.h>
 #include <MPU9250.h>
 #include <MPU6050.h>
+#include <JY901.h>
 #include <quat.h>
 #include <vector3.h>
 #include "configuration.h"
@@ -160,6 +161,23 @@ class MPU9250Sensor : public MPUSensor {
         unsigned long now = 0, last = 0;   //micros() timers
         float deltat = 0;                  //loop time in seconds
         bool newData {false};
+};
+
+class JY901Sensor : public Sensor {
+    public:
+        JY901Sensor() = default;
+        ~JY901Sensor() override  = default;
+        void motionSetup() override final;
+        void motionLoop() override final;
+        void sendData() override final;
+        void startCalibration(int calibrationType) override final;
+        void setupJY901(uint8_t sensorId = 0, uint8_t addr = 0x50);
+    private:
+        JY901 imu {JY901(0x50)};
+        bool newData {false};
+        uint8_t addr = 0x50;
+        uint8_t tap;
+        float a[3];
 };
 
 #endif /* _SENSOR_H_ */

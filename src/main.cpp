@@ -47,6 +47,10 @@
     MPU6050Sensor sensor{};
     #define HAS_SECOND_IMU true
     MPU6050Sensor sensor2{};
+#elif IMU == IMU_JY901
+    JY901Sensor sensor{};
+    #define HAS_SECOND_IMU true
+    JY901Sensor sensor2{};
 #else
     #error Unsupported IMU
 #endif
@@ -58,6 +62,8 @@ bool isCalibrating = false;
 bool blinking = false;
 unsigned long blinkStart = 0;
 unsigned long now_ms, last_ms = 0; //millis() timers
+unsigned long IMU_last_ms_1, IMU_start_ms_1 = 0; //millis() timers
+unsigned long IMU_last_ms_2, IMU_start_ms_2 = 0; //millis() timers
 unsigned long last_battery_sample = 0;
 bool secondImuActive = false;
 
@@ -122,6 +128,21 @@ void setup()
     sensor.setupBNO080(0, I2CSCAN::pickDevice(0x4A, 0x4B, true), PIN_IMU_INT);
     #endif
 #endif
+#if IMU == IMU_JY901
+    #ifdef HAS_SECOND_IMU
+        uint8_t first = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true);
+        uint8_t second = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, false);
+        if(first != second) {
+            sensor.setupJY901(0, first);
+            sensor2.setupJY901(1, second);
+            secondImuActive = true;
+        } else {
+            sensor.setupJY901(0, first);
+        }
+    #else
+    sensor.setupJY901(0, I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true));
+    #endif
+#endif
 #if IMU == IMU_MPU6050 || IMU == IMU_MPU6500
     #ifdef HAS_SECOND_IMU
         uint8_t first = I2CSCAN::pickDevice(0x68, 0x69, true);
@@ -162,9 +183,27 @@ void loop()
 #ifndef UPDATE_IMU_UNCONNECTED
         if(isConnected()) {
 #endif
+#if IMU == IMU_JY901
+    IMU_start_ms_1=millis();
+    if((IMU_start_ms_1-IMU_last_ms_1)>IMU1_SAMPLE_RATE)
+    {
+        sensor.motionLoop();
+        IMU_last_ms_1=millis();
+    }
+    #if HAS_SECOND_IMU
+        if(secondImuActive)
+        IMU_start_ms_2=millis();
+        if((IMU_start_ms_2-IMU_last_ms_2)>IMU2_SAMPLE_RATE)
+        {
+            sensor.motionLoop();
+            IMU_last_ms_2=millis();
+        }
+    #endif
+#else
     sensor.motionLoop();
-#ifdef HAS_SECOND_IMU
-    sensor2.motionLoop();
+    #ifdef HAS_SECOND_IMU
+        sensor2.motionLoop();
+    #endif
 #endif
 #ifndef UPDATE_IMU_UNCONNECTED
         }
