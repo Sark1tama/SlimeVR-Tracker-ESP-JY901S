@@ -21,3 +21,4 @@ Compatible and tested with these IMUs (select during compilation):
   * NOTE: Currently the MPU will auto calibrate when powered on. You *must* place it on the ground and *DO NOT* move it until calibration is complete (for a few seconds). **LED on the ESP will blink 5 times after calibration is over.**
 
 Firmware can work with both ESP8266 and ESP32. Please edit defines.h and set your pinout properly according to how you connected the IMU.
+# Add IMU model JY901S supported.
