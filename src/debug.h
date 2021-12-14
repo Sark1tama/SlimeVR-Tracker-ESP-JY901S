@@ -20,6 +20,9 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 */
+#ifndef SLIMEVR_DEBUG_H_
+#define SLIMEVR_DEBUG_H_
+
 #define IMU_MPU6050_RUNTIME_CALIBRATION // Comment to revert to startup/traditional-calibration
 
 //Debug information
@@ -27,7 +30,7 @@
 #define serialDebug false // Set to true to get Serial output for debugging
 #define serialBaudRate 115200
 #define UPDATE_IMU_UNCONNECTED 1
-#define SEND_UPDATES_UNCONNECTED 1
+// #define SEND_UPDATES_UNCONNECTED 1
 #define LED_INTERVAL_STANDBUY 10000
 #define STATUS_PRINT_INTERVAL 15000
 
@@ -49,3 +52,5 @@
 
 #define FIRMWARE_BUILD_NUMBER 8
 #define FIRMWARE_VERSION "0.1.2"
+
+#endif // SLIMEVR_DEBUG_H_

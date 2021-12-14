@@ -4,7 +4,7 @@
 JY901::JY901(unsigned char ucAddr)
 {
 	ucDevAddr = ucAddr;
-	tapDetector = TapDetector(3, [](){}); // Tripple tap
+	tapDetector = TapDetector(1, [](){}); // Tripple tap
 }
 unsigned char JY901::StartIIC(unsigned char ucAddr)
 {

@@ -20,6 +20,9 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 */
+#ifndef SLIMEVR_DEFINES_H_
+#define SLIMEVR_DEFINES_H_
+
 #include "consts.h"
 #include "debug.h"
 
