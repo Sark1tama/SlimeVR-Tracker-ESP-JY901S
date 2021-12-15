@@ -29,16 +29,16 @@
 // Set parameters of IMU and board used
 #define IMU IMU_JY901
 #define BOARD BOARD_CUSTOM
-#define IMU_ROTATION PI
-#define SECOND_IMU_ROTATION -PI / 2.0
+#define IMU_ROTATION DEG_0
+#define SECOND_IMU_ROTATION DEG_0
 
 #define IMU_NAME "JY901"
 #define IMU_HAS_ACCELL true
 #define IMU_HAS_GYRO true
 #define IMU_HAS_MAG true
-#define I2C_SPEED 400000 
-#define IMU1_SAMPLE_RATE 10
-#define IMU2_SAMPLE_RATE 10
+#define I2C_SPEED 400000
+#define IMU1_SAMPLE_RATE 4
+#define IMU2_SAMPLE_RATE 4
 
 #define PIN_IMU_SDA 21
 #define PIN_IMU_SCL 22
@@ -50,5 +50,6 @@
 #define CALIBRATING_LED 33
 #define STATUS_LED 25
 
+#define batteryADCMultiplier 3.3 / 4095.0 * 2.1
 
-#define batteryADCMultiplier 3.3 / 4095.0 * 2.2
+#endif

@@ -33,48 +33,24 @@
 #include "serialcommands.h"
 #include "ledstatus.h"
 
-<<<<<<< HEAD
 JY901Sensor sensor{};
 #define HAS_SECOND_IMU true
 JY901Sensor sensor2{};
 
-=======
-#if IMU == IMU_BNO080 || IMU == IMU_BNO085
-    BNO080Sensor sensor{};
-    #if defined(PIN_IMU_INT_2)
-        #define HAS_SECOND_IMU true
-        BNO080Sensor sensor2{};
-    #endif
-#elif IMU == IMU_BNO055
-    BNO055Sensor sensor{};
-#elif IMU == IMU_MPU9250
-    MPU9250Sensor sensor{};
-#elif IMU == IMU_MPU6500 || IMU == IMU_MPU6050
-    MPU6050Sensor sensor{};
-    #define HAS_SECOND_IMU true
-    MPU6050Sensor sensor2{};
-#elif IMU == IMU_JY901
-    JY901Sensor sensor{};
-    #define HAS_SECOND_IMU true
-    JY901Sensor sensor2{};
-#else
-    #error Unsupported IMU
-#endif
->>>>>>> main
 #ifndef HAS_SECOND_IMU
-    EmptySensor sensor2{};
+EmptySensor sensor2{};
 #endif
 
 bool isCalibrating = false;
 bool blinking = false;
 unsigned long blinkStart = 0;
-unsigned long now_ms, last_ms = 0; //millis() timers
+unsigned long now_ms, last_ms = 0;               //millis() timers
 unsigned long IMU_last_ms_1, IMU_start_ms_1 = 0; //millis() timers
 unsigned long IMU_last_ms_2, IMU_start_ms_2 = 0; //millis() timers
 unsigned long last_battery_sample = 0;
 bool secondImuActive = false;
 
-void commandReceived(int command, void * const commandData, int commandDataLength)
+void commandReceived(int command, void *const commandData, int commandDataLength)
 {
     switch (command)
     {
@@ -99,14 +75,11 @@ void setup()
     pinMode(CALIBRATING_LED, OUTPUT);
     digitalWrite(CALIBRATING_LED, LOW);
     digitalWrite(LOADING_LED, HIGH);
-    
+
     Serial.begin(serialBaudRate);
     setUpSerialCommands();
     // join I2C bus
     Wire.begin(PIN_IMU_SDA, PIN_IMU_SCL);
-#ifdef ESP8266
-    Wire.setClockStretchLimit(150000L); // Default stretch limit 150mS
-#endif
     Wire.setClock(I2C_SPEED);
 
     getConfigPtr();
@@ -114,71 +87,30 @@ void setup()
     setCommandReceivedCallback(commandReceived);
     // Wait for IMU to boot
     delay(500);
-    
-<<<<<<< HEAD
 
 #ifdef HAS_SECOND_IMU
     uint8_t first = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true);
-    uint8_t second = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, false);
-    if(first != second) {
+    uint8_t second = I2CSCAN::pickDevice(JY_ADDR_2, JY_ADDR_1, false);
+    if (first != second)
+    {
         sensor.setupJY901(0, first);
         sensor2.setupJY901(1, second);
         secondImuActive = true;
-    } else {
+    }
+    else
+    {
         sensor.setupJY901(0, first);
     }
 #else
-sensor.setupJY901(0, I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true));
-=======
-    // Currently only second BNO08X is supported
-#if IMU == IMU_BNO080 || IMU == IMU_BNO085
-    #ifdef HAS_SECOND_IMU
-        uint8_t first = I2CSCAN::pickDevice(0x4A, 0x4B, true);
-        uint8_t second = I2CSCAN::pickDevice(0x4B, 0x4A, false);
-        if(first != second) {
-            sensor.setupBNO080(0, first, PIN_IMU_INT);
-            sensor2.setupBNO080(1, second, PIN_IMU_INT_2);
-            secondImuActive = true;
-        } else {
-            sensor.setupBNO080(0, first, PIN_IMU_INT);
-        }
-    #else
-    sensor.setupBNO080(0, I2CSCAN::pickDevice(0x4A, 0x4B, true), PIN_IMU_INT);
-    #endif
-#endif
-#if IMU == IMU_JY901
-    #ifdef HAS_SECOND_IMU
-        uint8_t first = I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true);
-        uint8_t second = I2CSCAN::pickDevice(JY_ADDR_2, JY_ADDR_1, false);
-        if(first != second) {
-            sensor.setupJY901(0, first);
-            sensor2.setupJY901(1, second);
-            secondImuActive = true;
-        } else {
-            sensor.setupJY901(0, first);
-        }
-    #else
     sensor.setupJY901(0, I2CSCAN::pickDevice(JY_ADDR_1, JY_ADDR_2, true));
-    #endif
 #endif
-#if IMU == IMU_MPU6050 || IMU == IMU_MPU6500
-    #ifdef HAS_SECOND_IMU
-        uint8_t first = I2CSCAN::pickDevice(0x68, 0x69, true);
-        uint8_t second = I2CSCAN::pickDevice(0x69, 0x68, false);
-        if(first != second) {
-            sensor2.setSecond();
-            secondImuActive = true;
-        }
-    #endif
->>>>>>> main
-#endif
-
     sensor.motionSetup();
 #ifdef HAS_SECOND_IMU
-    if(secondImuActive)
+    if (secondImuActive)
+    {
         sensor2.motionSetup();
+    }
 #endif
-
     setUpWiFi();
     otaSetup(otaPassword);
     digitalWrite(LOADING_LED, LOW);
@@ -200,62 +132,67 @@ void loop()
         isCalibrating = false;
     }
 #ifndef UPDATE_IMU_UNCONNECTED
-        if(isConnected()) {
-#endif
-#if IMU == IMU_JY901
-    IMU_start_ms_1=millis();
-    if((IMU_start_ms_1-IMU_last_ms_1)>IMU1_SAMPLE_RATE)
+    if (isConnected())
     {
-        sensor.motionLoop();
-        IMU_last_ms_1=millis();
-    }
-    #if HAS_SECOND_IMU
-        if(secondImuActive)
-        IMU_start_ms_2=millis();
-        if((IMU_start_ms_2-IMU_last_ms_2)>IMU2_SAMPLE_RATE)
+#endif
+        IMU_start_ms_1 = millis();
+        if ((IMU_start_ms_1 - IMU_last_ms_1) > IMU1_SAMPLE_RATE)
         {
-            sensor2.motionLoop();
-            IMU_last_ms_2=millis();
+            sensor.motionLoop();
+            IMU_last_ms_1 = millis();
         }
-    #endif
-#else
-    sensor.motionLoop();
-    #ifdef HAS_SECOND_IMU
-        sensor2.motionLoop();
-    #endif
+#if HAS_SECOND_IMU
+        if (secondImuActive)
+        {
+            IMU_start_ms_2 = millis();
+            if ((IMU_start_ms_2 - IMU_last_ms_2) > IMU2_SAMPLE_RATE)
+            {
+                sensor2.motionLoop();
+                IMU_last_ms_2 = millis();
+            }
+        }
+#endif
+#ifndef UPDATE_IMU_UNCONNECTED
+    }
 #endif
 
-#ifndef UPDATE_IMU_UNCONNECTED
-        }
-#endif
-    // Send updates
     now_ms = millis();
 #ifndef SEND_UPDATES_UNCONNECTED
-    if(isConnected()) {
+    if (isConnected())
+    {
 #endif
         sensor.sendData();
 #ifdef HAS_SECOND_IMU
-        sensor2.sendData();
+        if (secondImuActive)
+            sensor2.sendData();
 #endif
 #ifndef SEND_UPDATES_UNCONNECTED
     }
 #endif
 #ifdef PIN_BATTERY_LEVEL
-    if(now_ms - last_battery_sample >= batterySampleRate) {
+    if (now_ms - last_battery_sample >= batterySampleRate)
+    {
         last_battery_sample = now_ms;
-        float battery = ((float) analogRead(PIN_BATTERY_LEVEL)) * batteryADCMultiplier;
+        float battery = ((float)analogRead(PIN_BATTERY_LEVEL)) * batteryADCMultiplier;
 
         float batteryLevel; // Estimate battery level, 3.2V is 0%, 4.17V is 100% (1.0)
-        if (battery > 3.975) batteryLevel = (battery - 2.920) * 0.8;
-        else if (battery > 3.678) batteryLevel = (battery - 3.300) * 1.25;
-        else if (battery > 3.489) batteryLevel = (battery - 3.400) * 1.7;
-        else if (battery > 3.360) batteryLevel = (battery - 3.300) * 0.8;
-        else batteryLevel = (battery - 3.200) * 0.3;
+        if (battery > 3.975)
+            batteryLevel = (battery - 2.920) * 0.8;
+        else if (battery > 3.678)
+            batteryLevel = (battery - 3.300) * 1.25;
+        else if (battery > 3.489)
+            batteryLevel = (battery - 3.400) * 1.7;
+        else if (battery > 3.360)
+            batteryLevel = (battery - 3.300) * 0.8;
+        else
+            batteryLevel = (battery - 3.200) * 0.3;
 
         batteryLevel = (batteryLevel - 0.05) / 0.95; // Cut off the last 5% (3.36V)
 
-        if (batteryLevel > 1) batteryLevel = 1;
-        else if (batteryLevel < 0) batteryLevel = 0;
+        if (batteryLevel > 1)
+            batteryLevel = 1;
+        else if (batteryLevel < 0)
+            batteryLevel = 0;
         send2Floats(battery, batteryLevel, PACKET_BATTERY_LEVEL);
     }
 #endif

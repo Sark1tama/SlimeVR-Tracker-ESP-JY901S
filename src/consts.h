@@ -33,16 +33,6 @@
 #define DEG_180 PI
 #define DEG_270 PI / 2
 
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 2
-#endif
-
-#ifdef ESP8266
-  #define HARDWARE_MCU 1
-#elif defined(ESP32)
-  #define HARDWARE_MCU 2
-#else
-  #define HARDWARE_MCU 0
-#endif
+#define HARDWARE_MCU 2
 
 #endif // SLIMEVR_CONSTS_H_

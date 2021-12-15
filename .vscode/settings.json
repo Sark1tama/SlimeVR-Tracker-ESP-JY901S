@@ -4,6 +4,7 @@
         "cstdlib": "cpp",
         "functional": "cpp",
         "*.tcc": "cpp",
-        "limits": "cpp"
+        "limits": "cpp",
+        "algorithm": "cpp"
     }
 }

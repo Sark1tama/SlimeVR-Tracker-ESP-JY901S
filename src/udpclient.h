@@ -24,13 +24,8 @@
 #ifndef SLIMEVR_UDP_CLIENT_H_
 #define SLIMEVR_UDP_CLIENT_H_
 
-#ifdef ESP8266
-    #include <ESP8266WiFi.h>
-    #include <ESPAsyncUDP.h>
-#else
-    #include <WiFi.h>
-    #include <AsyncUDP.h>
-#endif
+#include <WiFi.h>
+#include <AsyncUDP.h>
 #include <Arduino.h>
 #include "quat.h"
 #include "configuration.h"
