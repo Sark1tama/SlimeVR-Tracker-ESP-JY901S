@@ -583,170 +583,169 @@ void onPacketCallBack(AsyncUDPPacket packet)
                 {
                     lastPacketMs = millis();
                     int len = packet_read(packet, incomingPacket, sizeof(incomingPacket));
-                    // receive incoming UDP packets
-                    if (serialDebug)
+// receive incoming UDP packets
+#if serialDebug == true
                     {
                         Serial.printf("Received %d bytes from %s, port %d\n", packetSize, packet.remoteIP().toString().c_str(), packet.remotePort());
                         Serial.print("UDP packet contents: ");
                         for (int i = 0; i < len; ++i)
                             Serial.print((byte)incomingPacket[i]);
                         Serial.println();
+#endif
+                        switch (convert_chars<int>(incomingPacket))
+                        {
+                        case PACKET_RECEIVE_HEARTBEAT:
+                            sendHeartbeat();
+                            break;
+                        case PACKET_RECEIVE_VIBRATE:
+                            if (fp_commandCallback)
+                            {
+                                fp_commandCallback(COMMAND_BLINK, nullptr, 0);
+                            }
+                            break;
+                        case PACKET_RECEIVE_HANDSHAKE:
+                            // Assume handshake sucessful
+                            Serial.println("Handshale recived again, ignoring");
+                            break;
+                        case PACKET_RECEIVE_COMMAND:
+                            if (len < 6)
+                            {
+                                Serial.println("Command packet too short");
+                                break;
+                            }
+                            if (serialDebug)
+                            {
+                                Serial.printf("Recieved command %d\n", incomingPacket[4]);
+                            }
+                            if (fp_commandCallback)
+                            {
+                                fp_commandCallback(incomingPacket[4], &incomingPacket[5], len - 6);
+                            }
+                            break;
+                        case PACKET_CONFIG:
+                            if (len < sizeof(DeviceConfig) + 4)
+                            {
+                                Serial.println("config packet too short");
+                                break;
+                            }
+                            if (fp_configCallback)
+                            {
+                                fp_configCallback(convert_chars<DeviceConfig>(&incomingPacket[4]));
+                            }
+                            break;
+                        case PACKET_PING_PONG:
+                            returnLastPacket(len);
+                            break;
+                        case PACKET_SENSOR_INFO:
+                            if (len < 6)
+                            {
+                                Serial.println("Wrong sensor info packet");
+                                break;
+                            }
+                            if (incomingPacket[4] == 0)
+                            {
+                                sensorStateNotified1 = incomingPacket[5];
+                            }
+                            else if (incomingPacket[4] == 1)
+                            {
+                                sensorStateNotified2 = incomingPacket[5];
+                            }
+                            break;
+                        }
                     }
-
-                    switch (convert_chars<int>(incomingPacket))
+                    //while(Serial.available()) {
+                    //    size_t bytesRead = Serial.readBytes(serialBuffer, min(Serial.available(), sizeof(serialBuffer)));
+                    //    sendSerial(serialBuffer, bytesRead, PACKET_SERIAL);
+                    //}
+                }
+                else
+                {
+                    int packetSize = packet.length();
+                    if (packetSize)
                     {
-                    case PACKET_RECEIVE_HEARTBEAT:
-                        sendHeartbeat();
-                        break;
-                    case PACKET_RECEIVE_VIBRATE:
-                        if (fp_commandCallback)
+                        // receive incoming UDP packets
+                        Serial.printf("[Handshake] Received %d bytes from %s, port %d\n", packetSize, packet.remoteIP().toString().c_str(), packet.remotePort());
+                        int len = packet_read(packet, incomingPacket, sizeof(incomingPacket));
+                        Serial.print("[Handshake] UDP packet contents: ");
+                        for (int i = 0; i < len; ++i)
+                            Serial.print((byte)incomingPacket[i]);
+                        Serial.println();
+                        // Handshake is different, it has 3 in the first byte, not the 4th, and data starts right after
+                        switch (incomingPacket[0])
                         {
-                            fp_commandCallback(COMMAND_BLINK, nullptr, 0);
+                        case PACKET_HANDSHAKE:
+                            // Assume handshake sucessful, don't check it
+                            // But proper handshake should contain "Hey OVR =D 5" ASCII string right after the packet number
+                            // Starting on 14th byte (packet number, 12 bytes greetings, null-terminator) we can transfer SlimeVR handshake data
+                            host = packet.remoteIP();
+                            port = packet.remotePort();
+                            lastPacketMs = millis();
+                            connected = true;
+                            unsetLedStatus(LED_STATUS_SERVER_CONNECTING);
+#ifndef SEND_UPDATES_UNCONNECTED
+                            digitalWrite(LOADING_LED, LOW);
+#endif
+                            Serial.printf("[Handshake] Handshale sucessful, server is %s:%d\n", packet.remoteIP().toString().c_str(), +packet.remotePort());
                         }
-                        break;
-                    case PACKET_RECEIVE_HANDSHAKE:
-                        // Assume handshake sucessful
-                        Serial.println("Handshale recived again, ignoring");
-                        break;
-                    case PACKET_RECEIVE_COMMAND:
-                        if (len < 6)
-                        {
-                            Serial.println("Command packet too short");
-                            break;
-                        }
-                        if (serialDebug)
-                        {
-                            Serial.printf("Recieved command %d\n", incomingPacket[4]);
-                        }
-                        if (fp_commandCallback)
-                        {
-                            fp_commandCallback(incomingPacket[4], &incomingPacket[5], len - 6);
-                        }
-                        break;
-                    case PACKET_CONFIG:
-                        if (len < sizeof(DeviceConfig) + 4)
-                        {
-                            Serial.println("config packet too short");
-                            break;
-                        }
-                        if (fp_configCallback)
-                        {
-                            fp_configCallback(convert_chars<DeviceConfig>(&incomingPacket[4]));
-                        }
-                        break;
-                    case PACKET_PING_PONG:
-                        returnLastPacket(len);
-                        break;
-                    case PACKET_SENSOR_INFO:
-                        if (len < 6)
-                        {
-                            Serial.println("Wrong sensor info packet");
-                            break;
-                        }
-                        if (incomingPacket[4] == 0)
-                        {
-                            sensorStateNotified1 = incomingPacket[5];
-                        }
-                        else if (incomingPacket[4] == 1)
-                        {
-                            sensorStateNotified2 = incomingPacket[5];
-                        }
-                        break;
                     }
                 }
-                //while(Serial.available()) {
-                //    size_t bytesRead = Serial.readBytes(serialBuffer, min(Serial.available(), sizeof(serialBuffer)));
-                //    sendSerial(serialBuffer, bytesRead, PACKET_SERIAL);
-                //}
+            }
+        }
+    }
+    void onWiFiConnected()
+    {
+        while (!Udp.listen(port))
+        {
+        }
+        Serial.print("UDP Listening on IP: ");
+        Serial.println(WiFi.localIP());
+        Udp.onPacket(onPacketCallBack);
+        connected = false;
+        setLedStatus(LED_STATUS_SERVER_CONNECTING);
+    }
+
+    void clientUpdate(Sensor *const sensor, Sensor *const sensor2)
+    {
+        if (isWiFiConnected())
+        {
+            if (connected)
+            {
+                if (lastPacketMs + TIMEOUT < millis())
+                {
+                    setLedStatus(LED_STATUS_SERVER_CONNECTING);
+                    connected = false;
+                    sensorStateNotified1 = false;
+                    sensorStateNotified2 = false;
+                    Serial.println("Connection to server timed out");
+                }
+                if (sensorStateNotified1 != sensor->isWorking() || sensorStateNotified2 != sensor2->isWorking())
+                {
+                    updateSensorState(sensor, sensor2);
+                }
             }
             else
             {
-                int packetSize = packet.length();
-                if (packetSize)
+                unsigned long now = millis();
+                if (lastConnectionAttemptMs + 1000 < now)
                 {
-                    // receive incoming UDP packets
-                    Serial.printf("[Handshake] Received %d bytes from %s, port %d\n", packetSize, packet.remoteIP().toString().c_str(), packet.remotePort());
-                    int len = packet_read(packet, incomingPacket, sizeof(incomingPacket));
-                    Serial.print("[Handshake] UDP packet contents: ");
-                    for (int i = 0; i < len; ++i)
-                        Serial.print((byte)incomingPacket[i]);
-                    Serial.println();
-                    // Handshake is different, it has 3 in the first byte, not the 4th, and data starts right after
-                    switch (incomingPacket[0])
-                    {
-                    case PACKET_HANDSHAKE:
-                        // Assume handshake sucessful, don't check it
-                        // But proper handshake should contain "Hey OVR =D 5" ASCII string right after the packet number
-                        // Starting on 14th byte (packet number, 12 bytes greetings, null-terminator) we can transfer SlimeVR handshake data
-                        host = packet.remoteIP();
-                        port = packet.remotePort();
-                        lastPacketMs = millis();
-                        connected = true;
-                        unsetLedStatus(LED_STATUS_SERVER_CONNECTING);
+                    lastConnectionAttemptMs = now;
+                    Serial.println("Looking for the server...");
+                    sendHandshake();
 #ifndef SEND_UPDATES_UNCONNECTED
-                        digitalWrite(LOADING_LED, LOW);
+                    digitalWrite(LOADING_LED, HIGH);
 #endif
-                        Serial.printf("[Handshake] Handshale sucessful, server is %s:%d\n", packet.remoteIP().toString().c_str(), +packet.remotePort());
-                    }
                 }
-            }
-        }
-    }
-}
-void onWiFiConnected()
-{
-    while (!Udp.listen(port))
-    {
-    }
-    Serial.print("UDP Listening on IP: ");
-    Serial.println(WiFi.localIP());
-    Udp.onPacket(onPacketCallBack);
-    connected = false;
-    setLedStatus(LED_STATUS_SERVER_CONNECTING);
-}
-
-void clientUpdate(Sensor *const sensor, Sensor *const sensor2)
-{
-    if (isWiFiConnected())
-    {
-        if (connected)
-        {
-            if (lastPacketMs + TIMEOUT < millis())
-            {
-                setLedStatus(LED_STATUS_SERVER_CONNECTING);
-                connected = false;
-                sensorStateNotified1 = false;
-                sensorStateNotified2 = false;
-                Serial.println("Connection to server timed out");
-            }
-            if (sensorStateNotified1 != sensor->isWorking() || sensorStateNotified2 != sensor2->isWorking())
-            {
-                updateSensorState(sensor, sensor2);
-            }
-        }
-        else
-        {
-            unsigned long now = millis();
-            if (lastConnectionAttemptMs + 1000 < now)
-            {
-                lastConnectionAttemptMs = now;
-                Serial.println("Looking for the server...");
-                sendHandshake();
 #ifndef SEND_UPDATES_UNCONNECTED
-                digitalWrite(LOADING_LED, HIGH);
+                else if (lastConnectionAttemptMs + 20 < now)
+                {
+                    digitalWrite(LOADING_LED, LOW);
+                }
 #endif
             }
-#ifndef SEND_UPDATES_UNCONNECTED
-            else if (lastConnectionAttemptMs + 20 < now)
-            {
-                digitalWrite(LOADING_LED, LOW);
-            }
-#endif
         }
     }
-}
 
-bool isConnected()
-{
-    return connected;
-}
+    bool isConnected()
+    {
+        return connected;
+    }
