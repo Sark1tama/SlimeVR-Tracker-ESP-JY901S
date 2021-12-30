@@ -26,3 +26,7 @@ The following IMUs and their corresponding `IMU` values are supported by the fir
 
 Firmware can work with both ESP8266 and ESP32. Please edit defines.h and set your pinout properly according to how you connected the IMU.
 # Add IMU model JY901S supported.
+
+#Uploading On Linux
+
+Follow the instructions in this link [Platformio](https://docs.platformio.org/en/latest//faq.html#platformio-udev-rules), this should solve any permission denied errors
